@@ -708,9 +708,9 @@ class LoginForm extends SpecialPage {
 
         // AQUI PODRIA AGREGAR EL LLAMADO AL SCRIPT CREATEANDPROMOTE.PHP
         // PARA METER USUARIOS AL GRUPO QUE PERTENECE
-        if($u->getCatedratico() == '1'){
-            $u->addGroup('Docente');
-        }
+        //if($u->getCatedratico() == '1'){
+          //  $u->addGroup('Docente');
+        //}
 
 
 		// Update user count
