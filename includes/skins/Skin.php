@@ -1271,87 +1271,102 @@ abstract class Skin extends ContextSource {
 	 * @return array
 	 */
 	function addToSidebarPlain( &$bar, $text ) {
+	    global $wgUser;
+
 		$lines = explode( "\n", $text );
 
 		$heading = '';
 
-		foreach ( $lines as $line ) {
-			if ( strpos( $line, '*' ) !== 0 ) {
-				continue;
-			}
-			$line = rtrim( $line, "\r" ); // for Windows compat
+        foreach ($lines as $line) {
+            if (strpos($line, '*') !== 0) {
+                continue;
+            }
+            $line = rtrim($line, "\r"); // for Windows compat
 
-			if ( strpos( $line, '**' ) !== 0 ) {
-				$heading = trim( $line, '* ' );
-				if ( !array_key_exists( $heading, $bar ) ) {
-					$bar[$heading] = array();
-				}
-			} else {
-				$line = trim( $line, '* ' );
+            if (strpos($line, '**') !== 0) {
+                $heading = trim($line, '* ');
+                if (!array_key_exists($heading, $bar)) {
+                    $bar[$heading] = array();
+                }
+            } else {
+                $line = trim($line, '* ');
+                if (strpos($line, '|') !== false) { // sanity check
+                    $line = MessageCache::singleton()->transform($line, false, null, $this->getTitle());
+                    $line = array_map('trim', explode('|', $line, 2));
+                    if (count($line) !== 2) {
+                        // Second sanity check, could be hit by people doing
+                        // funky stuff with parserfuncs... (bug 33321)
+                        continue;
+                    }
 
-				if ( strpos( $line, '|' ) !== false ) { // sanity check
-					$line = MessageCache::singleton()->transform( $line, false, null, $this->getTitle() );
-					$line = array_map( 'trim', explode( '|', $line, 2 ) );
-					if ( count( $line ) !== 2 ) {
-						// Second sanity check, could be hit by people doing
-						// funky stuff with parserfuncs... (bug 33321)
-						continue;
-					}
+                    $extraAttribs = array();
+                    $msgLink = $this->msg($line[0])->inContentLanguage();
+                    if ($msgLink->exists()) {
+                        $link = $msgLink->text();
+                        if ($link == '-') {
+                            continue;
+                        }
+                    } else {
+                        $link = $line[0];
+                    }
+                    $msgText = $this->msg($line[1]);
+                    if ($msgText->exists()) {
+                        $text = $msgText->text();
+                    } else {
+                        $text = $line[1];
+                    }
 
-					$extraAttribs = array();
+                    if (preg_match('/^(?i:' . wfUrlProtocols() . ')/', $link)) {
+                        $href = $link;
 
-					$msgLink = $this->msg( $line[0] )->inContentLanguage();
-					if ( $msgLink->exists() ) {
-						$link = $msgLink->text();
-						if ( $link == '-' ) {
-							continue;
-						}
-					} else {
-						$link = $line[0];
-					}
-					$msgText = $this->msg( $line[1] );
-					if ( $msgText->exists() ) {
-						$text = $msgText->text();
-					} else {
-						$text = $line[1];
-					}
+                        // Parser::getExternalLinkAttribs won't work here because of the Namespace things
+                        global $wgNoFollowLinks, $wgNoFollowDomainExceptions;
+                        if ($wgNoFollowLinks && !wfMatchesDomainList($href, $wgNoFollowDomainExceptions)) {
+                            $extraAttribs['rel'] = 'nofollow';
+                        }
 
-					if ( preg_match( '/^(?i:' . wfUrlProtocols() . ')/', $link ) ) {
-						$href = $link;
+                        global $wgExternalLinkTarget;
+                        if ($wgExternalLinkTarget) {
+                            $extraAttribs['target'] = $wgExternalLinkTarget;
+                        }
+                    } else {
+                        $title = Title::newFromText($link);
 
-						// Parser::getExternalLinkAttribs won't work here because of the Namespace things
-						global $wgNoFollowLinks, $wgNoFollowDomainExceptions;
-						if ( $wgNoFollowLinks && !wfMatchesDomainList( $href, $wgNoFollowDomainExceptions ) ) {
-							$extraAttribs['rel'] = 'nofollow';
-						}
+                        if ($title) {
+                            $title = $title->fixSpecialName();
+                            $href = $title->getLinkURL();
+                        } else {
+                            $href = 'INVALID-TITLE';
+                        }
+                    }
 
-						global $wgExternalLinkTarget;
-						if ( $wgExternalLinkTarget ) {
-							$extraAttribs['target'] = $wgExternalLinkTarget;
-						}
-					} else {
-						$title = Title::newFromText( $link );
-
-						if ( $title ) {
-							$title = $title->fixSpecialName();
-							$href = $title->getLinkURL();
-						} else {
-							$href = 'INVALID-TITLE';
-						}
-					}
-
-					$bar[$heading][] = array_merge( array(
-						'text' => $text,
-						'href' => $href,
-						'id' => 'n-' . Sanitizer::escapeId( strtr( $line[1], ' ', '-' ), 'noninitial' ),
-						'active' => false
-					), $extraAttribs );
-				} else {
-					continue;
-				}
-			}
-		}
-
+                    $bar[$heading][] = array_merge(array(
+                        'text' => $text,
+                        'href' => $href,
+                        'id' => 'n-' . Sanitizer::escapeId(strtr($line[1], ' ', '-'), 'noninitial'),
+                        'active' => false
+                    ), $extraAttribs);
+                } else {
+                    continue;
+                }
+            }
+        }
+         if (in_array("Docente", $wgUser->mGroups)) {
+            $extraAttribs = array();
+            $bar["Menu Docentes"][0] = array_merge(array(
+                'text' => "EvalWiki",
+                'href' => "http://localhost/evalwikinew",
+                'id' => 'n-' . strtr("EvalWiki", ' ', '-'),
+                'active' => false
+            ), $extraAttribs);
+            $bar["Menu Docentes"][1] = array_merge(array(
+                'text' => "Evaluar Página",
+                'href' => "",
+                'onClick' => "#",
+                'id' => 'n-' . strtr("Evaluar Página", ' ', '-'),
+                'active' => false
+            ), $extraAttribs);
+        }
 		return $bar;
 	}
 
