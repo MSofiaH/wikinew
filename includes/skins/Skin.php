@@ -1362,7 +1362,7 @@ abstract class Skin extends ContextSource {
             $bar["Menu Docentes"][1] = array_merge(array(
                 'text' => "Evaluar Página",
                 'href' => "",
-                'onClick' => "#",
+                'onClick' => "",
                 'id' => 'n-' . strtr("Evaluar Página", ' ', '-'),
                 'active' => false
             ), $extraAttribs);
